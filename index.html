@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora PRO - Aceitera Principito</title>
+
+<style>
+/* ======================================================================
+   ESTILOS BASE Y VARIABLES
+   ====================================================================== */
+:root {
+  --bg-light: #f4f5f7;
+  --bg-dark: #111111;
+  --card-light: #ffffff;
+  --card-dark: #1f1f1f;
+  --primary: #e64a19;
+  --primary-soft: #ffe4d9;
+  --accent: #ffb74d;
+  --text-main: #222222;
+  --text-soft: #666666;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg-light);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  min-height: 100dvh; /* Mejorado para iOS */
+}
+
+body.dark { background: var(--bg-dark); color: #f5f5f5; }
+
+.app-wrapper {
+  width: 100%;
+  max-width: 900px;
+  padding: 18px 12px 32px;
+}
+
+.card {
+  background: var(--card-light);
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.14);
+  padding: 18px 18px 22px;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.12s ease;
+}
+
+body.dark .card {
+  background: var(--card-dark);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.7);
+}
+
+.card:hover { transform: translateY(-1px); }
+
+/* ======================================================================
+   ENCABEZADO
+   ====================================================================== */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+/* ... otros estilos de encabezado (omitidos para brevedad, son los mismos) ... */
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo-circle { /* ... */ width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle at 30% 20%, #ffccbc, #e64a19); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.logo-circle img { max-width: 95%; max-height: 95%; display: block; }
+.header-texts h1 { font-size: 1.1rem; margin: 0; letter-spacing: .04em; text-transform: uppercase; color: var(--primary); }
+.header-texts p { margin: 3px 0 0; font-size: 0.85rem; color: var(--text-soft); }
+body.dark .app-header { border-bottom-color: rgba(255,255,255,0.08); }
+body.dark .header-texts p { color: #bbbbbb; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.mode-toggle { border-radius: 999px; border: 1px solid rgba(0,0,0,0.18); padding: 5px 10px; font-size: 0.75rem; background: #fafafa; cursor: pointer; }
+body.dark .mode-toggle { background: #222; border-color: rgba(255,255,255,0.26); color: #f5f5f5; }
+.mode-toggle span { font-size: 0.85rem; }
+
+/* ======================================================================
+   ESTRUCTURA PRINCIPAL (GRID) Y CAMPOS DE ENTRADA
+   ====================================================================== */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.1fr) minmax(0,1fr);
+  gap: 18px;
+  margin-top: 6px;
+}
+
+@media (max-width: 780px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.subtle {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+/* --- Agrupación de Inputs (NUEVO) --- */
+.input-group {
+  background: var(--bg-light);
+  padding: 10px 14px;
+  border-radius: 14px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+body.dark .input-group {
+  background: #282828;
+  border-color: rgba(255,255,255,0.1);
+}
+
+.input-group-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+@media (max-width: 480px) {
+  .input-group-content { grid-template-columns: 1fr; }
+}
+
+/* Los campos largos como Nombre, Moneda, Bidones por Semana, y Otros se extienden */
+.input-full {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+/* Sobrescribir el margen superior de la etiqueta dentro de la cuadrícula, excepto el primero */
+.input-group-content label {
+  margin-top: 0;
+}
+.input-group-content label:not(:first-child) {
+  margin-top: 8px;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px 9px;
+  margin-top: 3px;
+  border-radius: 10px;
+  border: 1px solid #d0d4da;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  background: #fafbfc;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(230, 74, 25, 0.2);
+  background: #ffffff;
+}
+
+body.dark input, body.dark select {
+  border-color: #424242;
+  background: #252525;
+  color: #f3f3f3;
+}
+
+/* ======================================================================
+   BOTONES
+   ====================================================================== */
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.controls-row-main {
+  margin-bottom: 15px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+body.dark .controls-row-main { border-top-color: rgba(255,255,255,0.12); }
+
+button {
+  border-radius: 999px;
+  border: none;
+  padding: 9px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-main {
+  background: var(--primary);
+  color: #ffffff;
+  flex: 1;
+}
+/* ... otros estilos de botones (omitidos para brevedad, son los mismos) ... */
+.btn-secondary { background: #edf0f7; color: #333; }
+body.dark .btn-secondary { background: #303030; color: #f5f5f5; }
+.btn-ghost { background: transparent; border: 1px solid rgba(0,0,0,0.18); color: var(--text-soft); }
+body.dark .btn-ghost { border-color: rgba(255,255,255,0.26); color: #e0e0e0; }
+
+
+/* ======================================================================
+   RESULTADOS (RESULTADO MÁS ESTÉTICO)
+   ====================================================================== */
+
+.result-card {
+  background: var(--primary-soft); /* Fondo suave que destaca */
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid var(--primary);
+  margin-top: 4px;
+}
+
+body.dark .result-card {
+  background: #36170d; /* Fondo oscuro que contrasta con el primary */
+  border-color: var(--primary);
+}
+
+.result-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .result-grid { grid-template-columns: 1fr; }
+}
+
+.kpi {
+  padding: 12px 12px;
+  border-radius: 12px;
+  background: #ffffff; /* KPI blanco para contraste */
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+body.dark .kpi {
+  background: var(--card-dark);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-bottom: 2px;
+}
+
+.kpi-value {
+  font-size: 1.2rem; /* Valor más grande */
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.kpi-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-top: 4px;
+}
+
+body.dark .kpi-tag { color: #81c784; }
+
+.kpi-major-value {
+  font-size: 1.6rem; /* Destacar el ahorro */
+  color: var(--primary);
+}
+
+.chart-wrapper {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed rgba(0,0,0,0.08);
+}
+
+body.dark .chart-wrapper {
+  border-top-color: rgba(255,255,255,0.12);
+}
+
+#qr-container { margin-top: 14px; text-align: center; }
+
+.footer-note {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+}
+
+body.dark .footer-note { color: #aaaaaa; }
+</style>
+</head>
+
+<body>
+<div class="app-wrapper">
+  <div class="card">
+
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-circle">
+          <img src="logo_principito.png" alt="Aceitera Principito">
+        </div>
+        <div class="header-texts">
+          <h1>Aceitera Principito</h1>
+          <p>Calculadora PRO de ahorro para clientes gastronómicos</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="mode-toggle" onclick="toggleDark()">
+          <span id="mode-label">Modo oscuro: OFF</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="grid">
+
+      <div>
+        <div class="section-title">Ingreso de Datos</div>
+        <p class="subtle">Completá los campos para simular el ahorro mensual.</p>
+        
+                <div class="input-group">
+          <div class="input-group-content">
+            <div class="input-full">
+              <label>Nombre del cliente</label>
+              <input id="cliente_nombre" type="text" placeholder="Ej: Santacalma, Tolomeo, etc.">
+            </div>
+            <div class="input-full">
+              <label>Moneda</label>
+              <select id="moneda">
+                <option value="Gs">Guaraníes (Gs)</option>
+                <option value="AR$">Pesos Argentinos (AR$)</option>
+                <option value="USD">Dólares (USD)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+                <div class="input-group">
+          <h4 class="section-title" style="margin-top:0;">Consumo (Bidón de 18L)</h4>
+          
+          <div class="input-group-content">
+            <div>
+              <label>Precio **Otras marcas**</label>
+              <input id="precio_otras" type="text" inputmode="decimal">
+            </div>
+            <div>
+              <label>Días de uso **Otras marcas**</label>
+              <select id="dias_otras">
+                <option value="">Elegí días...</option>
+                <option value="1">1 día</option><option value="2">2 días</option>
+                <option value="3">3 días</option><option value="4">4 días</option>
+                <option value="5">5 días</option><option value="6">6 días</option>
+                <option value="7">7 días</option><option value="8">8 días</option>
+                <option value="9">9 días</option><option value="10">10 días</option>
+              </select>
+            </div>
+            <div>
+              <label>Precio **Principito**</label>
+              <input id="precio_principito" type="text" inputmode="decimal">
+            </div>
+            <div>
+              <label>Días de uso **Principito**</label>
+              <select id="dias_principito">
+                <option value="">Elegí días...</option>
+                <option value="1">1 día</option><option value="2">2 días</option>
+                <option value="3">3 días</option><option value="4">4 días</option>
+                <option value="5">5 días</option><option value="6">6 días</option>
+                <option value="7">7 días</option><option value="8">8 días</option>
+                <option value="9">9 días</option><option value="10">10 días</option>
+              </select>
+            </div>
+            <div class="input-full">
+              <label>Bidones usados por semana</label>
+              <input id="bidones_semana" type="text" inputmode="decimal">
+            </div>
+          </div>
+        </div>
+
+                <div class="input-group">
+          <h4 class="section-title" style="margin-top:0;">Producto de Venta</h4>
+          
+          <div class="input-group-content">
+            <div class="input-full">
+              <label>Tipo de producto</label>
+              <select id="tipo_producto" onchange="onTipoProductoChange()">
+                <option value="hamburguesas">Hamburguesas</option>
+                <option value="sándwiches de milanesa">Sándwiches de milanesa</option>
+                <option value="lomos">Lomos</option>
+                <option value="otro">Otro...</option>
+              </select>
+              <input id="tipo_otro" type="text" placeholder="Especificá el producto" style="display:none; margin-top:6px;">
+            </div>
+            <div>
+              <label>Costo unitario del producto</label>
+              <input id="costo_producto" type="text" inputmode="decimal">
+            </div>
+            <div>
+              <label>Precio de venta del producto</label>
+              <input id="venta_producto" type="text" inputmode="decimal">
+            </div>
+          </div>
+        </div>
+        
+                <div class="controls-row controls-row-main">
+          <button class="btn-main" onclick="calcular()">📈 Calcular Ahorro</button>
+          <button class="btn-secondary" onclick="limpiar()">🧹 Limpiar</button>
+        </div>
+
+                <div class="controls-row">
+          <button class="btn-ghost" onclick="generarPDF()">📄 PDF para cliente</button>
+          <button class="btn-ghost" onclick="generarQR()">📱 Generar QR (WhatsApp)</button>
+        </div>
+        
+                <div class="controls-row" style="margin-top:15px;">
+          <button class="btn-ghost" onclick="guardarPreset()">💾 Guardar</button>
+          <select id="preset_select" style="flex:1; min-width:0;">
+            <option value="">Cargar cliente guardado...</option>
+          </select>
+          <button class="btn-ghost" onclick="cargarPreset()">Cargar</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Resultado para el cliente</div>
+        <p class="subtle">
+          El plan PRO de Principito incluye el ahorro y la reinversión para generar una venta adicional.
+        </p>
+
+        <div id="resultado" class="result-card" style="display:none;"></div>
+
+        <div class="chart-wrapper">
+          <canvas id="chart"></canvas>
+        </div>
+
+        <div id="qr-container"></div>
+
+        <p class="footer-note">
+          La calculadora es estimativa. Adaptá precios, consumos y días de uso a la realidad de cada cocina.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ================================
+// Helpers numéricos seguros (MANTENEMOS ESTO PARA COMPATIBILIDAD CON iOS)
+// ================================
+function parseNumberSafe(value) {
+  if (value === null || value === undefined) return null;
+  var v = String(value).trim();
+  
+  v = v.replace(",", ".");
+  
+  var parts = v.split('.');
+  var integerPart = parts[0].replace(/[^0-9]/g, '');
+  var decimalPart = parts.slice(1).join('').replace(/[^0-9]/g, '');
+  
+  if (integerPart === "" && decimalPart === "") return null;
+  
+  var finalString = integerPart + (decimalPart ? '.' + decimalPart : '');
+  
+  var num = Number(finalString);
+  return isFinite(num) ? num : null;
+}
+
+function formatMoney(value, currency) {
+  if (!isFinite(value)) return "-";
+  var decimals = (currency === "Gs") ? 0 : 2;
+
+  if (typeof Intl === "undefined" || !Intl.NumberFormat) {
+    return value.toFixed(decimals);
+  }
+  
+  return new Intl.NumberFormat("es", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value);
+}
+
+function formatInteger(value) {
+  if (!isFinite(value)) return "-";
+  
+  if (typeof Intl === "undefined" || !Intl.NumberFormat) {
+    return String(Math.round(value));
+  }
+  
+  return new Intl.NumberFormat("es", {
+    maximumFractionDigits: 0
+  }).format(Math.round(value));
+}
+
+// ================================
+// Lógica de UI (Modo Oscuro, Tipo Producto)
+// ================================
+function toggleDark() {
+  var body = document.body;
+  if (body.classList.contains("dark")) {
+    body.classList.remove("dark");
+    localStorage.setItem("principito_dark", "0");
+    document.getElementById("mode-label").textContent = "Modo oscuro: OFF";
+  } else {
+    body.classList.add("dark");
+    localStorage.setItem("principito_dark", "1");
+    document.getElementById("mode-label").textContent = "Modo oscuro: ON";
+  }
+}
+
+function onTipoProductoChange() {
+  var sel = document.getElementById("tipo_producto");
+  var otro = document.getElementById("tipo_otro");
+  if (sel.value === "otro") {
+    otro.style.display = "block";
+  } else {
+    otro.style.display = "none";
+    otro.value = "";
+  }
+}
+
+// ================================
+// Cálculo principal (ACTUALIZACIÓN DE OUTPUT HTML)
+// ================================
+var chart = null;
+var ultimoResumen = null;
+
+function calcular() {
+  var moneda = document.getElementById("moneda").value;
+  var tipoSel = document.getElementById("tipo_producto").value;
+  var tipoOtro = document.getElementById("tipo_otro").value;
+  var tipo = (tipoSel === "otro") ? (tipoOtro || "producto") : tipoSel;
+  var cliente = document.getElementById("cliente_nombre").value || "(sin nombre)";
+
+  var pO = parseNumberSafe(document.getElementById("precio_otras").value);
+  var dO = parseNumberSafe(document.getElementById("dias_otras").value);
+  var pP = parseNumberSafe(document.getElementById("precio_principito").value);
+  var dP = parseNumberSafe(document.getElementById("dias_principito").value);
+  var b  = parseNumberSafe(document.getElementById("bidones_semana").value);
+  var cProd = parseNumberSafe(document.getElementById("costo_producto").value);
+  var vProd = parseNumberSafe(document.getElementById("venta_producto").value);
+
+  if (!pO || !dO || !pP || !dP || !b || !cProd || !vProd) {
+    alert("Completá todos los campos numéricos y los días de uso.");
+    return;
+  }
+
+  var mensual_otras = (pO / dO) * 30 * b;
+  var mensual_principito = (pP / dP) * 30 * b;
+  var ahorro = mensual_otras - mensual_principito;
+
+  var unidades1 = ahorro / cProd;
+  var venta_total1 = unidades1 * vProd;
+  var margen_unit = vProd - cProd;
+  var ganancia1 = unidades1 * margen_unit;
+
+  var fondo_mes2 = ahorro + ganancia1;
+  var unidades2 = fondo_mes2 / cProd;
+  var venta_total2 = unidades2 * vProd;
+
+  ultimoResumen = {
+    cliente: cliente,
+    moneda: moneda,
+    tipo: tipo,
+    mensual_otras: mensual_otras,
+    mensual_principito: mensual_principito,
+    ahorro: ahorro,
+    unidades1: unidades1,
+    venta_total1: venta_total1,
+    fondo_mes2: fondo_mes2,
+    unidades2: unidades2,
+    venta_total2: venta_total2
+  };
+
+  var res = document.getElementById("resultado");
+  res.style.display = "block";
+
+  // ----------------------------------------------------------------
+  // SALIDA HTML MEJORADA (MÁS ESTÉTICA)
+  // ----------------------------------------------------------------
+  var html = "";
+  html += "<h3>Resultados PRO - " + cliente + "</h3>";
+  html += '<div class="result-grid">';
+
+  // KPI 1: Ahorro Neto
+  html += '<div class="kpi">';
+  html += '<div class="kpi-label">💰 Ahorro mensual neto</div>';
+  html += '<div class="kpi-value kpi-major-value">' + moneda + " " + formatMoney(ahorro, moneda) + "</div>";
+  html += '<div class="kpi-tag">Diferencia de costo: ' + formatMoney(mensual_otras - mensual_principito, moneda) + '</div>';
+  html += "</div>";
+
+  // KPI 2: Venta Adicional (Mes 1)
+  html += '<div class="kpi">';
+  html += '<div class="kpi-label">🎁 Unidades extra (1er mes)</div>';
+  html += '<div class="kpi-value">' + formatInteger(unidades1) + " " + tipo + "</div>";
+  html += '<div class="kpi-tag">Venta generada: ' + moneda + " " + formatMoney(venta_total1, moneda) + "</div>";
+  html += "</div>";
+
+  // KPI 3: Costos
+  html += '<div class="kpi">';
+  html += '<div class="kpi-label">Gastos sin Principito</div>';
+  html += '<div class="kpi-value">' + moneda + " " + formatMoney(mensual_otras, moneda) + "</div>";
+  html += '<div class="kpi-tag">Gastos con Principito: ' + moneda + " " + formatMoney(mensual_principito, moneda) + "</div>";
+  html += "</div>";
+  
+  // KPI 4: Venta Adicional por Reinversión (Mes 2)
+  html += '<div class="kpi">';
+  html += '<div class="kpi-label">🚀 Venta total (2º mes reinvirtiendo)</div>';
+  html += '<div class="kpi-value">' + formatInteger(unidades2) + " " + tipo + "</div>";
+  html += '<div class="kpi-tag">Venta total: ' + moneda + " " + formatMoney(venta_total2, moneda) + "</div>";
+  html += "</div>";
+
+  html += "</div>";
+
+  res.innerHTML = html;
+  // ----------------------------------------------------------------
+
+  actualizarGrafico(mensual_otras, mensual_principito, moneda);
+}
+
+// ================================
+// Gráfico
+// ================================
+function actualizarGrafico(otras, princ, moneda) {
+  var canvas = document.getElementById("chart");
+  if (!canvas || typeof Chart === "undefined") {
+    return;
+  }
+  var ctx = canvas.getContext("2d");
+  if (chart) {
+    chart.destroy();
+  }
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Otras marcas", "Principito"],
+      datasets: [{
+        label: 'Costo Mensual',
+        data: [otras, princ],
+        backgroundColor: ["#e64a19", "#4caf50"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { 
+        legend: { display: false },
+        tooltip: { 
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ' + ultimoResumen.moneda + ' ' + formatMoney(context.parsed.y, ultimoResumen.moneda);
+            }
+          }
+        }
+      },
+      scales: { 
+        y: { 
+          beginAtZero: true,
+          ticks: { 
+            callback: function(value) { return ultimoResumen.moneda + ' ' + formatInteger(value / 1000) + 'k'; }
+          }
+        } 
+      }
+    }
+  });
+}
+
+// ================================
+// Limpiar, QR y PDF (Omitidos, ya son funcionales)
+// ================================
+function limpiar() {
+  var ids = [
+    "cliente_nombre","precio_otras","dias_otras",
+    "precio_principito","dias_principito","bidones_semana",
+    "costo_producto","venta_producto","tipo_otro"
+  ];
+  for (var i = 0; i < ids.length; i++) {
+    document.getElementById(ids[i]).value = "";
+  }
+  document.getElementById("moneda").value = "Gs";
+  document.getElementById("tipo_producto").value = "hamburguesas";
+  onTipoProductoChange();
+  document.getElementById("resultado").style.display = "none";
+  document.getElementById("qr-container").innerHTML = "";
+  if (chart) { chart.destroy(); chart = null; }
+  ultimoResumen = null;
+}
+
+function generarQR() {
+  if (!ultimoResumen) {
+    alert("Primero calculá para generar el QR.");
+    return;
+  }
+  if (typeof QRCode === "undefined") {
+    alert("No se pudo cargar la librería de QR.");
+    return;
+  }
+
+  var r = ultimoResumen;
+  var texto = "";
+  texto += "Cliente: " + r.cliente + "\n";
+  texto += "Ahorro mensual: " + r.moneda + " " + formatMoney(r.ahorro, r.moneda) + "\n";
+  texto += "1er mes (" + r.tipo + "): " + formatInteger(r.unidades1) +
+           " (venta: " + r.moneda + " " + formatMoney(r.venta_total1, r.moneda) + ")\n";
+  texto += "2º mes (" + r.tipo + "): " + formatInteger(r.unidades2) +
+           " (venta: " + r.moneda + " " + formatMoney(r.venta_total2, r.moneda) + ")";
+
+  var urlTexto = encodeURIComponent(texto);
+  var dataUrl = "https://wa.me/?text=" + urlTexto;
+
+  var qDiv = document.getElementById("qr-container");
+  qDiv.innerHTML = "<p style='font-size:0.8rem; margin-bottom:6px;'>Escaneá para enviarte el resumen por WhatsApp:</p>";
+
+  var qrBox = document.createElement("div");
+  qrBox.style.display = 'inline-block';
+  qDiv.appendChild(qrBox);
+
+  new QRCode(qrBox, {
+    text: dataUrl,
+    width: 170,
+    height: 170
+  });
+}
+
+function generarPDF() {
+  if (!ultimoResumen) {
+    alert("Primero calculá para generar el PDF.");
+    return;
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("No se pudo cargar la librería de PDF.");
+    return;
+  }
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF();
+  var r = ultimoResumen;
+
+  doc.setFontSize(14);
+  doc.text("Aceitera Principito - Resumen de ahorro", 10, 15);
+
+  doc.setFontSize(11);
+  doc.text("Cliente: " + r.cliente, 10, 25);
+  doc.text("Moneda: " + r.moneda, 10, 32);
+
+  doc.text("Costo mensual otras marcas: " + r.moneda + " " + formatMoney(r.mensual_otras, r.moneda), 10, 45);
+  doc.text("Costo mensual Principito: " + r.moneda + " " + formatMoney(r.mensual_principito, r.moneda), 10, 52);
+  doc.text("Ahorro mensual: " + r.moneda + " " + formatMoney(r.ahorro, r.moneda), 10, 59);
+
+  doc.text("1er mes - unidades de " + r.tipo + ": " + formatInteger(r.unidades1), 10, 72);
+  doc.text("Venta 1er mes: " + r.moneda + " " + formatMoney(r.venta_total1, r.moneda), 10, 79);
+
+  doc.text("2º mes (reinversión):", 10, 92);
+  doc.text("Unidades: " + formatInteger(r.unidades2), 10, 99);
+  doc.text("Venta 2º mes: " + r.moneda + " " + formatMoney(r.venta_total2, r.moneda), 10, 106);
+
+  doc.setFontSize(9);
+  doc.text("Simulación orientativa. Ajustar a los valores reales de cada cocina.", 10, 122);
+
+  var nombre = r.cliente.replace(/[^a-zA-Z0-9]/g,"_") || "cliente";
+  doc.save("Ahorro_Principito_" + nombre + ".pdf");
+}
+
+// ================================
+// Presets (Omitidos, ya son funcionales)
+// ================================
+function cargarListaPresets() {
+  var select = document.getElementById("preset_select");
+  select.innerHTML = '<option value="">Cargar cliente guardado...</option>';
+  var data = localStorage.getItem("principito_presets");
+  if (!data) return;
+  var presets = JSON.parse(data);
+  for (var nombre in presets) {
+    if (presets.hasOwnProperty(nombre)) {
+      var opt = document.createElement("option");
+      opt.value = nombre;
+      opt.textContent = nombre;
+      select.appendChild(opt);
+    }
+  }
+}
+
+function guardarPreset() {
+  var nombre = document.getElementById("cliente_nombre").value.trim();
+  if (!nombre) {
+    alert("Poné un nombre de cliente para guardarlo.");
+    return;
+  }
+  var data = localStorage.getItem("principito_presets");
+  var presets = data ? JSON.parse(data) : {};
+
+  presets[nombre] = {
+    moneda: document.getElementById("moneda").value,
+    precio_otras: document.getElementById("precio_otras").value,
+    dias_otras: document.getElementById("dias_otras").value,
+    precio_principito: document.getElementById("precio_principito").value,
+    dias_principito: document.getElementById("dias_principito").value,
+    bidones_semana: document.getElementById("bidones_semana").value,
+    tipo_producto: document.getElementById("tipo_producto").value,
+    tipo_otro: document.getElementById("tipo_otro").value,
+    costo_producto: document.getElementById("costo_producto").value,
+    venta_producto: document.getElementById("venta_producto").value
+  };
+
+  localStorage.setItem("principito_presets", JSON.stringify(presets));
+  cargarListaPresets();
+  alert("Cliente guardado correctamente.");
+}
+
+function cargarPreset() {
+  var select = document.getElementById("preset_select");
+  var nombre = select.value;
+  if (!nombre) {
+    alert("Elegí un cliente de la lista.");
+    return;
+  }
+  var data = localStorage.getItem("principito_presets");
+  if (!data) return;
+  var presets = JSON.parse(data);
+  var p = presets[nombre];
+  if (!p) return;
+
+  document.getElementById("cliente_nombre").value = nombre;
+  document.getElementById("moneda").value = p.moneda || "Gs";
+  document.getElementById("precio_otras").value = p.precio_otras || "";
+  document.getElementById("dias_otras").value = p.dias_otras || "";
+  document.getElementById("precio_principito").value = p.precio_principito || "";
+  document.getElementById("dias_principito").value = p.dias_principito || "";
+  document.getElementById("bidones_semana").value = p.bidones_semana || "";
+  document.getElementById("tipo_producto").value = p.tipo_producto || "hamburguesas";
+  document.getElementById("tipo_otro").value = p.tipo_otro || "";
+  document.getElementById("costo_producto").value = p.costo_producto || "";
+  document.getElementById("venta_producto").value = p.venta_producto || "";
+
+  onTipoProductoChange();
+  alert("Datos del cliente cargados. Ahora podés recalcular.");
+}
+
+// ================================
+// Inicialización
+// ================================
+window.addEventListener("DOMContentLoaded", function () {
+  var dark = localStorage.getItem("principito_dark") === "1";
+  if (dark) {
+    document.body.classList.add("dark");
+  }
+  var label = document.getElementById("mode-label");
+  if (label) {
+    label.textContent = "Modo oscuro: " + (dark ? "ON" : "OFF");
+  }
+
+  cargarListaPresets();
+});
+</script>
+
+</body>
+</html>
